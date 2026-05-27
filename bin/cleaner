@@ -1,0 +1,68 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require_relative '../lib/git_manager'
+
+# 1. Definição do Diretório Alvo
+# Se o usuário não passar um argumento, assumimos que ele quer limpar a pasta atual (onde ele digitou o comando).
+target_dir = ARGV[0] || Dir.pwd
+
+unless Dir.exist?(target_dir)
+  puts "\e[31mErro: O diretório '#{target_dir}' não existe.\e[0m"
+  exit 1
+end
+
+# 2. Busca por Repositórios Git
+puts "\e[36m=================================================\e[0m"
+puts "\e[1m  🧹 Git Branch Cleaner\e[0m"
+puts "\e[36m=================================================\e[0m"
+puts "\e[90mAnalisando: #{target_dir}\e[0m\n\n"
+
+# O Dir.glob com duplo asterisco (**) faz uma busca recursiva em subpastas.
+# Buscamos especificamente pela pasta oculta '.git' para identificar um repositório.
+git_repos = Dir.glob(File.join(target_dir, '**', '.git'))
+
+if git_repos.empty?
+  puts "\e[33mNenhum repositório Git encontrado nesta pasta ou em suas subpastas.\e[0m"
+  exit 0
+end
+
+# 3. Execução da Limpeza
+total_deleted = 0
+
+git_repos.each do |git_dir|
+  # O dirname remove a parte '/.git' do caminho, nos dando a raiz do projeto
+  repo_path = File.dirname(git_dir)
+  repo_name = File.basename(repo_path)
+  
+  manager = GitManager.new(repo_path)
+  
+  begin
+    branches_to_delete = manager.merged_branches
+    
+    if branches_to_delete.empty?
+      puts "  ✅ \e[1;37m#{repo_name}:\e[0m \e[32mJá está limpo.\e[0m"
+    else
+      # Imprime o nome do projeto e a quantidade de lixo encontrada
+      puts "  🗑️  \e[1;33m#{repo_name}:\e[0m \e[31mLimpando #{branches_to_delete.size} branches...\e[0m"
+      
+      # Executa a deleção
+      manager.clean!
+      
+      # Lista o nome do que foi apagado para dar feedback visual
+      branches_to_delete.each do |branch|
+        puts "      \e[90m- deletada: #{branch}\e[0m"
+      end
+      
+      total_deleted += branches_to_delete.size
+    end
+  rescue StandardError => e
+    # Caso ocorra algum erro de permissão ou o git falhe naquele projeto específico
+    puts "  \e[31m[ERRO] Falha ao processar #{repo_name}\e[0m"
+    puts "  \e[90m#{e.message}\e[0m"
+  end
+end
+
+puts "\n\e[36m=================================================\e[0m"
+puts "\e[1;32mLimpeza Concluída!\e[0m \e[1;37m#{total_deleted} branches removidas no total.\e[0m"
+puts "\e[36m=================================================\e[0m\n"
