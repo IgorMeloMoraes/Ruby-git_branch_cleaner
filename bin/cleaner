@@ -3,7 +3,7 @@
 
 require_relative '../lib/git_manager'
 
-# 1. Definição do Diretório Alvo
+# Definição do Diretório Alvo
 # Se o usuário não passar um argumento, assumimos que ele quer limpar a pasta atual (onde ele digitou o comando).
 target_dir = ARGV[0] || Dir.pwd
 
@@ -12,13 +12,12 @@ unless Dir.exist?(target_dir)
   exit 1
 end
 
-# 2. Busca por Repositórios Git
+# Busca por Repositórios Git
 puts "\e[36m=================================================\e[0m"
 puts "\e[1m  🧹 Git Branch Cleaner\e[0m"
 puts "\e[36m=================================================\e[0m"
 puts "\e[90mAnalisando: #{target_dir}\e[0m\n\n"
 
-# O Dir.glob com duplo asterisco (**) faz uma busca recursiva em subpastas.
 # Buscamos especificamente pela pasta oculta '.git' para identificar um repositório.
 git_repos = Dir.glob(File.join(target_dir, '**', '.git'))
 
@@ -27,11 +26,10 @@ if git_repos.empty?
   exit 0
 end
 
-# 3. Execução da Limpeza
+# Execução da Limpeza
 total_deleted = 0
 
 git_repos.each do |git_dir|
-  # O dirname remove a parte '/.git' do caminho, nos dando a raiz do projeto
   repo_path = File.dirname(git_dir)
   repo_name = File.basename(repo_path)
   
